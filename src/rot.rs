@@ -1,5 +1,4 @@
 use crate::Param;
-use derive_more::derive::{From, Into};
 use glam::{Mat2, Mat3, Quat, Vec2, Vec3};
 use std::f32::consts::PI;
 
@@ -8,12 +7,30 @@ use std::f32::consts::PI;
 pub struct Rot2(f32);
 
 /// 3D Rotation.
-#[derive(Clone, Copy, Debug, From, Into)]
-pub struct Rot3(
-    #[from]
-    #[into]
-    Quat,
-);
+#[derive(Clone, Copy, Debug)]
+pub struct Rot3(Quat);
+
+impl From<f32> for Rot2 {
+    fn from(value: f32) -> Self {
+        Self(value)
+    }
+}
+impl From<Rot2> for f32 {
+    fn from(value: Rot2) -> Self {
+        value.0
+    }
+}
+
+impl From<Quat> for Rot3 {
+    fn from(value: Quat) -> Self {
+        Self(value)
+    }
+}
+impl From<Rot3> for Quat {
+    fn from(value: Rot3) -> Self {
+        value.0
+    }
+}
 
 impl Default for Rot3 {
     fn default() -> Self {

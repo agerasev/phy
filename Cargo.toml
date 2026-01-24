@@ -12,4 +12,3 @@ std = ["glam/std"]
 
 [dependencies]
 glam = { version = "0.31.0", default-features = false }
-derive_more = { version = "2.1.1", features = ["from", "into"] }

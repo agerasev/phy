@@ -8,18 +8,16 @@ struct EulerStep {
 }
 
 impl Visitor for EulerStep {
-    fn apply<P: Param>(&mut self, p: &mut Var<P>) {
-        let x = &mut p.value;
-        let dx = &mut p.deriv;
-        let dt = self.dt;
-
-        x.0 = x.0.step(dx.0, dt);
-        dx.0 = Default::default();
+    type Solver = Euler;
+    fn apply<P: Param>(&mut self, p: &mut Var<P, Euler>) {
+        p.value = p.value.step(p.deriv, self.dt);
+        p.deriv = Default::default();
     }
 }
 
 impl Solver for Euler {
-    fn solve_step<S: System>(&self, system: &mut S, dt: f32) {
+    type Storage<P: Param> = ();
+    fn solve_step<S: System<Self>>(&self, system: &mut S, dt: f32) {
         system.compute_derivs(dt);
         system.visit_vars(&mut EulerStep { dt });
     }

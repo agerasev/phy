@@ -3,6 +3,12 @@ use crate::{Param, Solver, System, Var, Visitor};
 /// The Runge–Kutta method (RK4).
 pub struct Rk4;
 
+#[derive(Clone, Copy, Default, Debug)]
+pub struct Rk4Storage<P: Param> {
+    value: P,
+    deriv: P::Deriv,
+}
+
 struct Rk4Step {
     stage: u32,
     dt: f32,
@@ -21,37 +27,41 @@ impl Rk4Step {
 }
 
 impl Visitor for Rk4Step {
-    fn apply<P: Param>(&mut self, p: &mut Var<P>) {
+    type Solver = Rk4;
+    fn apply<P: Param>(&mut self, p: &mut Var<P, Self::Solver>) {
         let x = &mut p.value;
         let dx = &mut p.deriv;
+        let sx = &mut p.storage.value;
+        let sdx = &mut p.storage.deriv;
         let dt = self.dt();
 
         match self.stage {
             0 => {
-                (x.1, dx.1) = (x.0, dx.0);
-                x.0 = x.1.step(dx.0, dt);
+                (*sx, *sdx) = (*x, *dx);
+                *x = sx.step(*dx, dt);
             }
             1 => {
-                dx.1 = dx.1 + dx.0 * 2.0;
-                x.0 = x.1.step(dx.0, dt);
+                *sdx = *sdx + *dx * 2.0;
+                *x = sx.step(*dx, dt);
             }
             2 => {
-                dx.1 = dx.1 + dx.0 * 2.0;
-                x.0 = x.1.step(dx.0, dt);
+                *sdx = *sdx + *dx * 2.0;
+                *x = sx.step(*dx, dt);
             }
             3 => {
-                dx.1 = (dx.1 + dx.0) * (1.0 / 6.0);
-                x.0 = x.1.step(dx.1, dt);
+                *sdx = (*sdx + *dx) * (1.0 / 6.0);
+                *x = sx.step(*sdx, dt);
             }
             _ => unreachable!(),
         };
 
-        dx.0 = Default::default();
+        *dx = Default::default();
     }
 }
 
 impl Solver for Rk4 {
-    fn solve_step<S: System>(&self, system: &mut S, dt: f32) {
+    type Storage<P: Param> = Rk4Storage<P>;
+    fn solve_step<S: System<Self>>(&self, system: &mut S, dt: f32) {
         for stage in 0..4 {
             let mut step = Rk4Step { stage, dt };
             system.compute_derivs(step.dt());
