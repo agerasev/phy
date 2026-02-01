@@ -1,6 +1,6 @@
 use crate::Param;
+use core::f32::consts::PI;
 use glam::{Mat2, Mat3, Quat, Vec2, Vec3};
-use std::f32::consts::PI;
 
 /// 2D Rotation.
 #[derive(Clone, Copy, Default, Debug)]

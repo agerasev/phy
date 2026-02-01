@@ -1,8 +1,5 @@
 #![no_std]
 
-#[cfg(feature = "std")]
-extern crate std;
-
 mod euler;
 mod rk4;
 mod rot;
