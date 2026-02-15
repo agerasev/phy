@@ -2,6 +2,11 @@
 
 A generic extendable first-order differential equation solver.
 
+[![Crates.io](https://img.shields.io/crates/v/phy)](https://crates.io/crates/phy)
+[![Documentation](https://docs.rs/phy/badge.svg)](https://docs.rs/phy)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![CI](https://github.com/agerasev/phy/actions/workflows/ci.yml/badge.svg)](https://github.com/agerasev/phy/actions/workflows/ci.yml)
+
 ## Overview
 
 The crate provides a framework for solving first-order differential equations using various numerical integration methods. It's designed to be generic and extensible, supporting different parameter types and solvers.
