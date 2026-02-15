@@ -51,6 +51,8 @@
 mod euler;
 mod rk4;
 mod rot;
+#[cfg(test)]
+mod tests;
 mod var;
 
 pub use crate::{euler::Euler, rk4::Rk4, rot::*, var::Var};
