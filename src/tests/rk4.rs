@@ -1,6 +1,6 @@
 //! Tests for the RK4 solver, including accuracy verification.
 
-use crate::{Rk4, Solver, System, Var};
+use crate::{Rk4, Solver, System, Var, Visitor, rk4::Rk4Step};
 use glam::Vec2;
 
 /// A simple test system with constant derivative: dx/dt = c
@@ -19,11 +19,11 @@ impl ConstantDerivativeSystem {
 }
 
 impl System<Rk4> for ConstantDerivativeSystem {
-    fn compute_derivs(&mut self, _dt: f32) {
+    fn compute_derivs(&mut self, _: &Rk4Step) {
         self.x.deriv = self.derivative;
     }
 
-    fn visit_vars<V: crate::Visitor<Solver = Rk4>>(&mut self, visitor: &mut V) {
+    fn visit_vars<V: Visitor<Rk4>>(&mut self, visitor: &mut V) {
         visitor.apply(&mut self.x);
     }
 }
@@ -71,11 +71,11 @@ impl ExponentialSystemRK4 {
 }
 
 impl System<Rk4> for ExponentialSystemRK4 {
-    fn compute_derivs(&mut self, _dt: f32) {
+    fn compute_derivs(&mut self, _: &Rk4Step) {
         self.x.deriv = self.growth_rate * *self.x;
     }
 
-    fn visit_vars<V: crate::Visitor<Solver = Rk4>>(&mut self, visitor: &mut V) {
+    fn visit_vars<V: Visitor<Rk4>>(&mut self, visitor: &mut V) {
         visitor.apply(&mut self.x);
     }
 }
@@ -188,14 +188,14 @@ impl HarmonicOscillator {
 }
 
 impl System<Rk4> for HarmonicOscillator {
-    fn compute_derivs(&mut self, _dt: f32) {
+    fn compute_derivs(&mut self, _: &Rk4Step) {
         // dx/dt = v
         self.x.deriv = *self.v;
         // dv/dt = -ω²x
         self.v.deriv = -self.omega_squared * *self.x;
     }
 
-    fn visit_vars<V: crate::Visitor<Solver = Rk4>>(&mut self, visitor: &mut V) {
+    fn visit_vars<V: Visitor<Rk4>>(&mut self, visitor: &mut V) {
         visitor.apply(&mut self.x);
         visitor.apply(&mut self.v);
     }
@@ -230,7 +230,7 @@ fn test_rk4_harmonic_oscillator() {
 /// Compare RK4 accuracy vs Euler for the same problem.
 #[test]
 fn test_rk4_vs_euler_accuracy() {
-    use crate::Euler;
+    use crate::{Euler, euler::EulerStep};
 
     // Use exponential growth problem
     let growth_rate = 1.0;
@@ -253,11 +253,11 @@ fn test_rk4_vs_euler_accuracy() {
     }
 
     impl System<Euler> for ExponentialSystemEuler {
-        fn compute_derivs(&mut self, _dt: f32) {
+        fn compute_derivs(&mut self, _: &EulerStep) {
             self.x.deriv = self.growth_rate * *self.x;
         }
 
-        fn visit_vars<V: crate::Visitor<Solver = Euler>>(&mut self, visitor: &mut V) {
+        fn visit_vars<V: Visitor<Euler>>(&mut self, visitor: &mut V) {
             visitor.apply(&mut self.x);
         }
     }
@@ -305,14 +305,14 @@ fn test_rk4_vector_variables() {
     }
 
     impl System<Rk4> for VectorSystem {
-        fn compute_derivs(&mut self, _dt: f32) {
+        fn compute_derivs(&mut self, _: &Rk4Step) {
             // dx/dt = v
             self.position.deriv = *self.velocity;
             // dv/dt = -v (damping)
             self.velocity.deriv = -*self.velocity;
         }
 
-        fn visit_vars<V: crate::Visitor<Solver = Rk4>>(&mut self, visitor: &mut V) {
+        fn visit_vars<V: Visitor<Rk4>>(&mut self, visitor: &mut V) {
             visitor.apply(&mut self.position);
             visitor.apply(&mut self.velocity);
         }

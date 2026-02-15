@@ -1,4 +1,4 @@
-use crate::{Param, Solver, System, Var, Visitor};
+use crate::{Context, Param, Solver, System, Var, Visitor};
 
 /// The classical fourth-order Runge–Kutta method (RK4).
 ///
@@ -50,31 +50,29 @@ enum Rk4Stage {
     Stage4,
 }
 
-impl Rk4Stage {
-    /// Returns the time step used in this stage.
-    ///
-    /// Used as the `dt` parameter passed to `System::compute_derivs`
-    /// **before** the stage computations.
-    fn time_step(&self, dt: f32) -> f32 {
-        match self {
-            Rk4Stage::Stage1 => dt / 2.0,
-            Rk4Stage::Stage2 => dt / 2.0,
-            Rk4Stage::Stage3 => dt,
-            Rk4Stage::Stage4 => dt,
-        }
-    }
-}
-
 /// Visitor that applies a single RK4 stage to variables.
-struct Rk4Step {
+pub struct Rk4Step {
     stage: Rk4Stage,
     dt: f32,
 }
 
-impl Visitor for Rk4Step {
-    type Solver = Rk4;
+impl Context<Rk4> for Rk4Step {
+    /// Returns the time step used in this stage.
+    ///
+    /// Used as the `dt` parameter passed to `System::compute_derivs`
+    /// **before** the stage computations.
+    fn time_step(&self) -> f32 {
+        match self.stage {
+            Rk4Stage::Stage1 => self.dt / 2.0,
+            Rk4Stage::Stage2 => self.dt / 2.0,
+            Rk4Stage::Stage3 => self.dt,
+            Rk4Stage::Stage4 => self.dt,
+        }
+    }
+}
 
-    fn apply<P: Param>(&mut self, var: &mut Var<P, Self::Solver>) {
+impl Visitor<Rk4> for Rk4Step {
+    fn apply<P: Param>(&mut self, var: &mut Var<P, Rk4>) {
         let y = &mut var.value;
         let dy_dt = &mut var.deriv;
         let init_y = &mut var.storage.init_value;
@@ -85,32 +83,38 @@ impl Visitor for Rk4Step {
             Rk4Stage::Stage1 => {
                 // k1 = f(t_n, y_n)
                 // Save initial value y_n for use in subsequent stages
-                *init_y = *y;
+                init_y.clone_from(y);
                 // Start accumulation with k1
-                *accum = *dy_dt;
+                accum.clone_from(dy_dt);
                 // Prepare state for stage 2: y = y_n + k1 * dt / 2
-                *y = init_y.step(*dy_dt, 0.5 * dt);
+                y.step(dy_dt, 0.5 * dt);
             }
             Rk4Stage::Stage2 => {
                 // k2 = f(t_n + dt/2, y_n + k1*dt/2)
-                // Accumulate: k1 + 2*k2
-                *accum = *accum + *dy_dt * 2.0;
                 // Prepare state for stage 3: y = y_n + k2 * dt / 2
-                *y = init_y.step(*dy_dt, 0.5 * dt);
+                y.clone_from(init_y);
+                y.step(dy_dt, 0.5 * dt);
+                // Accumulate: k1 + 2*k2
+                *dy_dt *= 2.0;
+                *accum += dy_dt;
             }
             Rk4Stage::Stage3 => {
                 // k3 = f(t_n + dt/2, y_n + k2*dt/2)
-                // Accumulate: k1 + 2*k2 + 2*k3
-                *accum = *accum + *dy_dt * 2.0;
                 // Prepare state for stage 4: y = y_n + k3 * dt
-                *y = init_y.step(*dy_dt, dt);
+                *y = init_y.clone();
+                y.step(dy_dt, dt);
+                // Accumulate: k1 + 2*k2 + 2*k3
+                *dy_dt *= 2.0;
+                *accum += dy_dt;
             }
             Rk4Stage::Stage4 => {
                 // k4 = f(t_n + dt, y_n + k3*dt)
                 // Complete accumulation: (k1 + 2*k2 + 2*k3 + k4) / 6
-                *accum = (*accum + *dy_dt) * (1.0 / 6.0);
+                *accum += dy_dt;
+                *accum *= 1.0 / 6.0;
                 // Final update: y_{n+1} = y_n + accum * dt
-                *y = init_y.step(*accum, dt);
+                *y = init_y.clone();
+                y.step(accum, dt);
             }
         }
 
@@ -120,6 +124,7 @@ impl Visitor for Rk4Step {
 }
 
 impl Solver for Rk4 {
+    type Context = Rk4Step;
     type Storage<P: Param> = Rk4Storage<P>;
 
     fn solve_step<S: System<Self>>(&self, system: &mut S, dt: f32) {
@@ -133,7 +138,7 @@ impl Solver for Rk4 {
             let mut step = Rk4Step { stage, dt };
 
             // Compute derivatives with the appropriate time step for this stage
-            system.compute_derivs(stage.time_step(dt));
+            system.compute_derivs(&step);
 
             // Apply the RK4 stage to all variables
             system.visit_vars(&mut step);

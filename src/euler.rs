@@ -1,4 +1,4 @@
-use crate::{Param, Solver, System, Var, Visitor};
+use crate::{Context, Param, Solver, System, Var, Visitor};
 
 /// The explicit Euler method for numerical integration.
 ///
@@ -24,13 +24,17 @@ use crate::{Param, Solver, System, Var, Visitor};
 pub struct Euler;
 
 /// Visitor that applies a single Euler step to variables.
-struct EulerStep {
+pub struct EulerStep {
     dt: f32,
 }
 
-impl Visitor for EulerStep {
-    type Solver = Euler;
+impl Context<Euler> for EulerStep {
+    fn time_step(&self) -> f32 {
+        self.dt
+    }
+}
 
+impl Visitor<Euler> for EulerStep {
     /// Apply the Euler update to a variable.
     ///
     /// Updates the variable's value using:
@@ -39,7 +43,7 @@ impl Visitor for EulerStep {
     /// Then resets the derivative to prepare for the next step.
     fn apply<P: Param>(&mut self, var: &mut Var<P, Euler>) {
         // Euler integration: x_{n+1} = x_n + dx/dt * dt
-        var.value = var.value.step(var.deriv, self.dt);
+        var.value.step(&var.deriv, self.dt);
 
         // Reset derivative for next computation
         var.deriv = P::Deriv::default();
@@ -47,6 +51,7 @@ impl Visitor for EulerStep {
 }
 
 impl Solver for Euler {
+    type Context = EulerStep;
     /// Euler's method requires no additional storage per variable.
     type Storage<P: Param> = ();
 
@@ -60,10 +65,12 @@ impl Solver for Euler {
     /// * `system` - The system to integrate.
     /// * `dt` - Time step for the integration.
     fn solve_step<S: System<Self>>(&self, system: &mut S, dt: f32) {
+        let mut step = EulerStep { dt };
+
         // Compute derivatives at current state
-        system.compute_derivs(dt);
+        system.compute_derivs(&step);
 
         // Apply Euler update to all variables
-        system.visit_vars(&mut EulerStep { dt });
+        system.visit_vars(&mut step);
     }
 }

@@ -25,7 +25,7 @@ const K: f32 = 10.0; // spring constant
 const L: f32 = 2.0; // spring equilibrium length
 
 impl<S: Solver> System<S> for CoupledOscillators<S> {
-    fn compute_derivs(&mut self, _dt: f32) {
+    fn compute_derivs(&mut self, _: &S::Context) {
         // Mass 1: dx1/dt = v1
         self.x1.deriv = *self.v1;
         self.v1.deriv = -K / self.m1
@@ -47,7 +47,7 @@ impl<S: Solver> System<S> for CoupledOscillators<S> {
             .sum::<f32>();
     }
 
-    fn visit_vars<V: Visitor<Solver = S>>(&mut self, visitor: &mut V) {
+    fn visit_vars<V: Visitor<S>>(&mut self, visitor: &mut V) {
         visitor.apply(&mut self.x1);
         visitor.apply(&mut self.v1);
         visitor.apply(&mut self.x2);

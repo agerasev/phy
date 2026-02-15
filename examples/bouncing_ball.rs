@@ -30,7 +30,7 @@ const K: f32 = 1000.0; // ground spring stiffness (N/m)
 const F: f32 = 100.0; // ground damping coefficient (N·s/m)
 
 impl<S: Solver> System<S> for BouncingBall<S> {
-    fn compute_derivs(&mut self, _dt: f32) {
+    fn compute_derivs(&mut self, _: &S::Context) {
         // Position derivative: dx/dt = v
         self.pos.deriv = *self.vel;
 
@@ -40,7 +40,7 @@ impl<S: Solver> System<S> for BouncingBall<S> {
         self.vel.deriv += -G + (K - F * *self.vel) * (-self.pos.min(0.0));
     }
 
-    fn visit_vars<V: Visitor<Solver = S>>(&mut self, visitor: &mut V) {
+    fn visit_vars<V: Visitor<S>>(&mut self, visitor: &mut V) {
         visitor.apply(&mut self.pos);
         visitor.apply(&mut self.vel);
     }

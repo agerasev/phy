@@ -36,7 +36,7 @@ use core::{
 /// // Set the derivative (velocity)
 /// position.deriv = Vec2::new(1.0, 0.0);
 /// ```
-pub struct Var<P: Param, S: Solver> {
+pub struct Var<P: Param, S: Solver + ?Sized> {
     /// The current value of the variable.
     pub value: P,
     /// The derivative (rate of change) of the variable.
@@ -50,11 +50,21 @@ pub struct Var<P: Param, S: Solver> {
 
 impl<P: Param, S: Solver> Clone for Var<P, S> {
     fn clone(&self) -> Self {
-        *self
+        Self {
+            value: self.value.clone(),
+            deriv: self.deriv.clone(),
+            storage: self.storage.clone(),
+        }
     }
 }
 
-impl<P: Param, S: Solver> Copy for Var<P, S> {}
+impl<P: Param, S: Solver> Copy for Var<P, S>
+where
+    P: Copy,
+    P::Deriv: Copy,
+    S::Storage<P>: Copy,
+{
+}
 
 impl<P: Param, S: Solver> Default for Var<P, S> {
     /// Create a variable with default values.

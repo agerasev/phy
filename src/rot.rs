@@ -175,8 +175,8 @@ impl Param for Rot2 {
     ///
     /// Computes: `angle_{n+1} = angle_n + ω * dt` (modulo 2π)
     /// where ω is the angular velocity (`dp`).
-    fn step(self, dp: f32, dt: f32) -> Self {
-        self.chain(Rot2::from_angle(dp * dt))
+    fn step(&mut self, dp: &f32, dt: f32) {
+        *self = self.chain(Rot2::from_angle(dp * dt));
     }
 }
 
@@ -191,8 +191,8 @@ impl Param for Rot3 {
     ///
     /// Computes a rotation increment from the axis-angle representation
     /// of `dp * dt` and chains it with the current rotation.
-    fn step(self, dp: Vec3, dt: f32) -> Self {
-        self.chain(Rot3::from_scaled_axis(dp * dt))
+    fn step(&mut self, dp: &Vec3, dt: f32) {
+        *self = self.chain(Rot3::from_scaled_axis(dp * dt));
     }
 }
 

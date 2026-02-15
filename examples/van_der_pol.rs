@@ -29,7 +29,7 @@ struct VanDerPol<S: Solver> {
 const MU: f32 = 2.0; // damping parameter
 
 impl<S: Solver> System<S> for VanDerPol<S> {
-    fn compute_derivs(&mut self, _dt: f32) {
+    fn compute_derivs(&mut self, _: &S::Context) {
         // Position derivative: dx/dt = v
         self.x.deriv = *self.v;
 
@@ -38,7 +38,7 @@ impl<S: Solver> System<S> for VanDerPol<S> {
         self.v.deriv = nonlinear_damping - *self.x;
     }
 
-    fn visit_vars<V: Visitor<Solver = S>>(&mut self, visitor: &mut V) {
+    fn visit_vars<V: Visitor<S>>(&mut self, visitor: &mut V) {
         visitor.apply(&mut self.x);
         visitor.apply(&mut self.v);
     }

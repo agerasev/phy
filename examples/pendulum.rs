@@ -26,14 +26,14 @@ const G: f32 = 9.8; // gravitational acceleration (m/s²)
 const L: f32 = 1.0; // pendulum length (m)
 
 impl<S: Solver> System<S> for Pendulum<S> {
-    fn compute_derivs(&mut self, _dt: f32) {
+    fn compute_derivs(&mut self, _: &S::Context) {
         // Angle derivative: dθ/dt = ω
         self.theta.deriv = *self.omega;
         // Angular velocity derivative: dω/dt = -(g/L) * sin(θ)
         self.omega.deriv = -(G / L) * (*self.theta).sin();
     }
 
-    fn visit_vars<V: Visitor<Solver = S>>(&mut self, visitor: &mut V) {
+    fn visit_vars<V: Visitor<S>>(&mut self, visitor: &mut V) {
         visitor.apply(&mut self.theta);
         visitor.apply(&mut self.omega);
     }

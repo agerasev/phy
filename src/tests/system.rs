@@ -1,15 +1,15 @@
 //! Example systems for testing the System trait implementations.
 
-use crate::{Euler, Rk4, Solver, System, Var};
+use crate::{Euler, Rk4, Solver, System, Var, Visitor};
 use glam::Vec2;
 
 /// A simple particle system with position and velocity.
-pub struct SimpleParticle {
-    pub position: Var<Vec2, Euler>,
-    pub velocity: Var<Vec2, Euler>,
+pub struct SimpleParticle<S: Solver> {
+    pub position: Var<Vec2, S>,
+    pub velocity: Var<Vec2, S>,
 }
 
-impl SimpleParticle {
+impl<S: Solver> SimpleParticle<S> {
     pub fn new(pos: Vec2, vel: Vec2) -> Self {
         Self {
             position: Var::new(pos),
@@ -18,28 +18,28 @@ impl SimpleParticle {
     }
 }
 
-impl System<Euler> for SimpleParticle {
-    fn compute_derivs(&mut self, _dt: f32) {
+impl<S: Solver> System<S> for SimpleParticle<S> {
+    fn compute_derivs(&mut self, _: &S::Context) {
         // dx/dt = v
         self.position.deriv = *self.velocity;
         // dv/dt = 0 (no acceleration)
         self.velocity.deriv = Vec2::ZERO;
     }
 
-    fn visit_vars<V: crate::Visitor<Solver = Euler>>(&mut self, visitor: &mut V) {
+    fn visit_vars<V: Visitor<S>>(&mut self, visitor: &mut V) {
         visitor.apply(&mut self.position);
         visitor.apply(&mut self.velocity);
     }
 }
 
 /// A particle with drag force: dv/dt = -k * v
-pub struct ParticleWithDrag {
-    pub position: Var<Vec2, Euler>,
-    pub velocity: Var<Vec2, Euler>,
+pub struct ParticleWithDrag<S: Solver> {
+    pub position: Var<Vec2, S>,
+    pub velocity: Var<Vec2, S>,
     pub drag_coefficient: f32,
 }
 
-impl ParticleWithDrag {
+impl<S: Solver> ParticleWithDrag<S> {
     pub fn new(pos: Vec2, vel: Vec2, drag_coefficient: f32) -> Self {
         Self {
             position: Var::new(pos),
@@ -49,15 +49,15 @@ impl ParticleWithDrag {
     }
 }
 
-impl System<Euler> for ParticleWithDrag {
-    fn compute_derivs(&mut self, _dt: f32) {
+impl<S: Solver> System<S> for ParticleWithDrag<S> {
+    fn compute_derivs(&mut self, _: &S::Context) {
         // dx/dt = v
         self.position.deriv = *self.velocity;
         // dv/dt = -k * v (drag force proportional to velocity)
         self.velocity.deriv = -*self.velocity * self.drag_coefficient;
     }
 
-    fn visit_vars<V: crate::Visitor<Solver = Euler>>(&mut self, visitor: &mut V) {
+    fn visit_vars<V: Visitor<S>>(&mut self, visitor: &mut V) {
         visitor.apply(&mut self.position);
         visitor.apply(&mut self.velocity);
     }
@@ -119,16 +119,16 @@ fn test_particle_with_drag() {
 #[test]
 fn test_system_solver_genericity() {
     // Create a simple system that works with any solver
-    struct GenericSystem<S: crate::Solver> {
+    struct GenericSystem<S: Solver> {
         x: Var<f32, S>,
     }
 
-    impl<S: crate::Solver> System<S> for GenericSystem<S> {
-        fn compute_derivs(&mut self, _dt: f32) {
+    impl<S: Solver> System<S> for GenericSystem<S> {
+        fn compute_derivs(&mut self, _ctx: &S::Context) {
             self.x.deriv = 1.0;
         }
 
-        fn visit_vars<V: crate::Visitor<Solver = S>>(&mut self, visitor: &mut V) {
+        fn visit_vars<V: Visitor<S>>(&mut self, visitor: &mut V) {
             visitor.apply(&mut self.x);
         }
     }

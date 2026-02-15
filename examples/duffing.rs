@@ -37,7 +37,7 @@ const GAMMA: f32 = 0.5; // forcing amplitude
 const OMEGA: f32 = 1.2; // forcing frequency
 
 impl<S: Solver> System<S> for Duffing<S> {
-    fn compute_derivs(&mut self, _dt: f32) {
+    fn compute_derivs(&mut self, _: &S::Context) {
         // Position derivative: dx/dt = v
         self.x.deriv = *self.v;
 
@@ -50,7 +50,7 @@ impl<S: Solver> System<S> for Duffing<S> {
         self.time.deriv = 1.0;
     }
 
-    fn visit_vars<V: Visitor<Solver = S>>(&mut self, visitor: &mut V) {
+    fn visit_vars<V: Visitor<S>>(&mut self, visitor: &mut V) {
         visitor.apply(&mut self.x);
         visitor.apply(&mut self.v);
         visitor.apply(&mut self.time);

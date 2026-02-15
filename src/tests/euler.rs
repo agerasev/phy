@@ -1,6 +1,6 @@
 //! Tests for the Euler solver.
 
-use crate::{Euler, Solver, System, Var};
+use crate::{Euler, Solver, System, Var, Visitor, euler::EulerStep};
 use glam::Vec2;
 
 /// A simple test system with a single variable.
@@ -17,12 +17,12 @@ impl SimpleSystem {
 }
 
 impl System<Euler> for SimpleSystem {
-    fn compute_derivs(&mut self, _dt: f32) {
+    fn compute_derivs(&mut self, _: &EulerStep) {
         // Constant derivative: dx/dt = 1.0
         self.x.deriv = 1.0;
     }
 
-    fn visit_vars<V: crate::Visitor<Solver = Euler>>(&mut self, visitor: &mut V) {
+    fn visit_vars<V: Visitor<Euler>>(&mut self, visitor: &mut V) {
         visitor.apply(&mut self.x);
     }
 }
@@ -62,11 +62,11 @@ impl ExponentialSystem {
 }
 
 impl System<Euler> for ExponentialSystem {
-    fn compute_derivs(&mut self, _dt: f32) {
+    fn compute_derivs(&mut self, _: &EulerStep) {
         self.x.deriv = self.growth_rate * *self.x;
     }
 
-    fn visit_vars<V: crate::Visitor<Solver = Euler>>(&mut self, visitor: &mut V) {
+    fn visit_vars<V: Visitor<Euler>>(&mut self, visitor: &mut V) {
         visitor.apply(&mut self.x);
     }
 }
@@ -115,14 +115,14 @@ impl Particle2D {
 }
 
 impl System<Euler> for Particle2D {
-    fn compute_derivs(&mut self, _dt: f32) {
+    fn compute_derivs(&mut self, _: &EulerStep) {
         // dx/dt = v
         self.position.deriv = *self.velocity;
         // dv/dt = 0 (no acceleration)
         self.velocity.deriv = Vec2::ZERO;
     }
 
-    fn visit_vars<V: crate::Visitor<Solver = Euler>>(&mut self, visitor: &mut V) {
+    fn visit_vars<V: Visitor<Euler>>(&mut self, visitor: &mut V) {
         visitor.apply(&mut self.position);
         visitor.apply(&mut self.velocity);
     }
