@@ -14,10 +14,10 @@ default = ["std"]
 std = ["glam/std"]
 
 [dependencies]
-glam = { version = "0.32.0", default-features = false, features = [
+glam = { version = "0.33.7", default-features = false, features = [
     "nostd-libm",
 ] }
-libm = { version = "0.2.11", default-features = false }
+libm = { version = "0.2.16", default-features = false }
 
 [dev-dependencies]
 approx = "0.5.1"
