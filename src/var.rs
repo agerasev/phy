@@ -150,7 +150,7 @@ where
         write!(
             f,
             "Var {{ value: {:?}, deriv: {:?}, storage: {:?} }}",
-            &self.value, &self.deriv, &self.storage
+            self.value, self.deriv, self.storage
         )
     }
 }
